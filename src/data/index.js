@@ -19,7 +19,7 @@ const Profile_Menu = [
     icon: <Gear />,
   },
   {
-    title: "Profile",
+    title: "Logout",
     icon: <SignOut />,
   },
 ];
@@ -139,7 +139,7 @@ const Chat_History = [
   {
     type: "divider",
     text: "Today",
-  },
+  },       
   {
     type: "msg",
     message: "Hi 👋 Panda, not bad, u ?",
