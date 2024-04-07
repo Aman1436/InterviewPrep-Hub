@@ -18,10 +18,13 @@ import {
 } from "phosphor-react";
 import { useTheme } from "@mui/material/styles";
 import StyledBadge from '../StyleBadge';
+import { dispatch, useDispatch } from '../../redux/store';
+import { ToggleSidebar, toggleSidebar } from '../../redux/slices/app';
 
 
 const Header = () => {
     const theme=useTheme();
+    const dispatch=useDispatch();
   return (
     <Box
         p={2}
@@ -40,7 +43,10 @@ const Header = () => {
           justifyContent={"space-between"}
           sx={{ width: "100%", height: "100%" }}
         >
-          <Stack direction={"row"} spacing={2}>
+          <Stack onClick={()=>{
+            dispatch(ToggleSidebar());
+          }} 
+          direction={"row"} spacing={2}>
             <Box>
               <StyledBadge
                 overlap="circular"
