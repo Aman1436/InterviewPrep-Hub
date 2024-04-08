@@ -8,6 +8,7 @@ import DashboardLayout from "../layouts/dashboard";
 import { DEFAULT_PATH } from "../config";
 import LoadingScreen from "../components/LoadingScreen";
 import Settings from "../pages/dashboard/Settings";
+import MainLayout from "../layouts/main";
 
 const Loadable = (Component) => (props) => {
   return (
@@ -19,6 +20,15 @@ const Loadable = (Component) => (props) => {
 
 export default function Router() {
   return useRoutes([
+    {
+      path:"/auth",
+      element:<MainLayout/>,
+      // define different sub pages under this path
+      children:[
+        {element:<LoginPage/>,path:"login"}
+      ]
+    },
+
     {
       path: "/",
       element: <DashboardLayout />,
@@ -38,6 +48,9 @@ export default function Router() {
 const GeneralApp = Loadable(
   lazy(() => import("../pages/dashboard/GeneralApp")),
 );
+
+
+const LoginPage=Loadable(lazy(()=>import("../pages/auth/Login")))
 const Setting = Loadable(
   lazy(() => import("../pages/dashboard/Settings")),
 );
