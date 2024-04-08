@@ -104,7 +104,7 @@ const ReplyMsg = ({ el }) => {
     )
 }
 
-const MediaMsg = ({ el }) => {
+const MediaMsg = ({ el,menu }) => {
     const theme = useTheme();
     return (
         <Stack direction="row" justifyContent={el.incoming ? "start" : "end"}>
@@ -128,12 +128,13 @@ const MediaMsg = ({ el }) => {
 
 
             </Box>
-        <MessageOptions/>
+            {menu && <MessageOptions/> }
+        
         </Stack>
     )
 }
 
-const TextMsg = ({ el }) => {
+const TextMsg = ({ el ,menu}) => {
     const theme = useTheme();
     return (
         <Stack direction="row" justifyContent={el.incoming ? "start" : "end"}>
@@ -150,7 +151,7 @@ const TextMsg = ({ el }) => {
                 </Typography>
             </Box>
         {/*  */}
-        <MessageOptions/>
+        {menu && <MessageOptions/> }
         </Stack>
     )
 }
