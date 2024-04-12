@@ -1,4 +1,5 @@
-import React from "react";
+import React,{useState} from "react";
+
 import { Box, Stack, Slide, IconButton, Typography, Avatar, Divider, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useDispatch } from "react-redux";
@@ -64,8 +65,8 @@ const Contact = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
 
-  const [openBlock, setOpenBlock] = React.useState(false);
-  const [openDelete, setOpenDelete] = React.useState(false);
+  const [openBlock, setOpenBlock] = useState(false);
+  const [openDelete, setOpenDelete] =useState(false);
 
   const handleCloseBlock = () => {
     setOpenBlock(false);

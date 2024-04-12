@@ -12,22 +12,22 @@ import { LoadingButton } from "@mui/lab";
 import { useDispatch, useSelector } from "react-redux";
 import { Eye, EyeSlash } from "phosphor-react";
 import { useTheme } from "@mui/material/styles";
-const LoginForm = () => {
+const NewPasswordForm = () => {
   const [showPassword, setShowPassword] = useState(false);
     const theme=useTheme();
   // Using Yup->object form validation library
-  const LoginSchema = Yup.object().shape({
-    email: Yup.string().required("Email is required").email("Email must be a valid email address"),
-    password: Yup.string().required("Password is required")
+  const NewPasswordSchema = Yup.object().shape({
+    newPassword: Yup.string().min(6,'Password must be atleast 6 characters').required("Password is required"),
+    confirmPassword: Yup.string().required("Password is required").oneOf([Yup.ref('newPassword'),null,'Password must match']),
   });
   
   const defaultValues = {
-    email: "demo@tawk.com",
-    password: "demo1234"
+    newPassword:"",
+    confirmPassword:"",
   };
   
   const methods = useForm({
-    resolver: yupResolver(LoginSchema),
+    resolver: yupResolver(NewPasswordSchema),
     defaultValues,
   });
 
@@ -50,10 +50,9 @@ const LoginForm = () => {
         {!!errors.afterSubmit && <Alert severity="error">{errors.afterSubmit.message}</Alert>}
       </Stack>
       <Stack spacing={2}>
-      <RHFTextField name="email" label="Email address" />
       <RHFTextField
-          name="password"
-          label="Password"
+          name="newPassword"
+          label="New Password"
           type={showPassword ? "text" : "password"}
           InputProps={{
             endAdornment: (
@@ -68,12 +67,25 @@ const LoginForm = () => {
             ),
           }}
         />
-        </Stack>
-        <Stack alignItems="flex-end" sx={{ my: 2 }}>
-        <Link component={RouterLink} to="/auth/reset-password" variant="body2" color="inherit" underline="always">
-          Forgot password?
-        </Link>
-        <Button
+        <RHFTextField
+          name="confirmPassword"
+          label="Confirm Password"
+          type={showPassword ? "text" : "password"}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowPassword(!showPassword)}
+                  edge="end"
+                >
+                  {showPassword ? <Eye /> : <EyeSlash />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+       
+      <Button
       fullWidth
       color="inherit"
       size="large"
@@ -88,13 +100,12 @@ const LoginForm = () => {
         }
       }}
       >
-
-
-        Login
+        Submit
       </Button>
-      </Stack>      
+      </Stack>
+      
     </FormProvider>
   );
 };
 
-export default LoginForm;
+export default NewPasswordForm;

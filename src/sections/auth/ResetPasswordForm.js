@@ -5,29 +5,26 @@ import { Link as RouterLink } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 // @mui
-import { Link,Stack, Alert,InputAdornment,IconButton ,Button} from "@mui/material";
+import {Stack, Alert,Button} from "@mui/material";
 // components
 import FormProvider, { RHFTextField } from "../../components/hook-form";
-import { LoadingButton } from "@mui/lab";
-import { useDispatch, useSelector } from "react-redux";
-import { Eye, EyeSlash } from "phosphor-react";
 import { useTheme } from "@mui/material/styles";
-const LoginForm = () => {
+
+const ResetPasswordForm = () => {
   const [showPassword, setShowPassword] = useState(false);
     const theme=useTheme();
   // Using Yup->object form validation library
-  const LoginSchema = Yup.object().shape({
-    email: Yup.string().required("Email is required").email("Email must be a valid email address"),
-    password: Yup.string().required("Password is required")
+  const ResetPasswordSchema = Yup.object().shape({
+    email: Yup.string().required("Email is required").email("Email must be a valid email address")
   });
   
   const defaultValues = {
     email: "demo@tawk.com",
-    password: "demo1234"
+    
   };
   
   const methods = useForm({
-    resolver: yupResolver(LoginSchema),
+    resolver: yupResolver(ResetPasswordSchema),
     defaultValues,
   });
 
@@ -48,32 +45,8 @@ const LoginForm = () => {
     <FormProvider methods={methods} onSubmit={handleSubmit(onSubmit)}>
       <Stack spacing={3}>
         {!!errors.afterSubmit && <Alert severity="error">{errors.afterSubmit.message}</Alert>}
-      </Stack>
-      <Stack spacing={2}>
       <RHFTextField name="email" label="Email address" />
-      <RHFTextField
-          name="password"
-          label="Password"
-          type={showPassword ? "text" : "password"}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  onClick={() => setShowPassword(!showPassword)}
-                  edge="end"
-                >
-                  {showPassword ? <Eye /> : <EyeSlash />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-        </Stack>
-        <Stack alignItems="flex-end" sx={{ my: 2 }}>
-        <Link component={RouterLink} to="/auth/reset-password" variant="body2" color="inherit" underline="always">
-          Forgot password?
-        </Link>
-        <Button
+      <Button
       fullWidth
       color="inherit"
       size="large"
@@ -87,14 +60,13 @@ const LoginForm = () => {
             color:()=>theme.palette.mode==='light'? "common.white":"grey.800",
         }
       }}
-      >
-
-
-        Login
+      > 
+      Send Request
       </Button>
-      </Stack>      
+      </Stack> 
+      
     </FormProvider>
   );
 };
 
-export default LoginForm;
+export default ResetPasswordForm;
