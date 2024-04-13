@@ -67,7 +67,7 @@ const ChatElement = ({ id, name, img, msg, time, unread, online }) => {
               <Avatar src={faker.image.avatar()} />
             )}
             <Stack spacing={0.3}>
-              <Typography variant="subtitle2">{NamedNodeMap}</Typography>
+              <Typography variant="subtitle2">{name}</Typography>
               <Typography variant="caption">{msg}</Typography>
             </Stack>
           </Stack>
