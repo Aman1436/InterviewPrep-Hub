@@ -1,9 +1,10 @@
-import React, { useEffect } from "react";
+import React from "react";
 import {
-  Dialog,
-  DialogContent,
   DialogTitle,
+  Button,
+  Dialog,
   Slide,
+  DialogContent,
   Stack,
 } from "@mui/material";
 import {
@@ -13,30 +14,12 @@ import {
 } from "../../components/Search";
 import { MagnifyingGlass } from "phosphor-react";
 import { CallElement } from "../../components/CallElement";
-import { Calllogs } from "../../data";
-import { useDispatch, useSelector } from "react-redux";
-import { FetchAllUsers } from "../../redux/slices/app";
-import {faker} from "@faker-js/faker";
-
+import { MembersList } from "../../data";
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
 const StartCall = ({ open, handleClose }) => {
-  const {all_users} = useSelector((state) => state.app);
-  const dispatch = useDispatch();
-  useEffect(() => {
-    dispatch(FetchAllUsers());
-  }, []);
-
-  console.log(Calllogs, all_users, "Call List Info");
-
-  const list = all_users.map((el) => ({
-    id: el?._id,
-    name: `${el?.firstName} ${el?.lastName}`,
-    image: faker.image.avatar(),
-  }));
-
   return (
     <Dialog
       fullWidth
@@ -48,29 +31,31 @@ const StartCall = ({ open, handleClose }) => {
       aria-describedby="alert-dialog-slide-description"
       sx={{ p: 4 }}
     >
-      <DialogTitle>{"Start New Conversation"}</DialogTitle>
-      <Stack p={1} sx={{ width: "100%" }}>
-        {/* <Search>
-          <SearchIconWrapper>
-            <MagnifyingGlass color="#709CE6" />
-          </SearchIconWrapper>
-          <StyledInputBase
-            placeholder="Search…"
-            inputProps={{ "aria-label": "search" }}
-          />
-        </Search> */}
-      </Stack>
+      {/* */}
+      <DialogTitle sx={{ mb: 3 }}>Start Call</DialogTitle>
+      {/* */}
+
       <DialogContent>
-        <Stack sx={{ height: "100%" }}>
-          <Stack spacing={2.4}>
-            {list.map((el, idx) => {
-              return <CallElement key={idx} {...el} handleClose={handleClose} />;
-            })}
+        <Stack spacing={3}>
+          <Stack sx={{ width: "100%" }}>
+            <Search>
+              <SearchIconWrapper>
+                <MagnifyingGlass color="#709CE6" />
+              </SearchIconWrapper>
+              <StyledInputBase
+                placeholder="Search..."
+                inputProps={{ "aria-label": "search" }}
+              />
+            </Search>
           </Stack>
+          {/*Call List*/}
+          {MembersList.map((el) => (
+            <CallElement {...el} />
+          ))}
         </Stack>
+        <CallElement />
       </DialogContent>
     </Dialog>
   );
 };
-
 export default StartCall;

@@ -139,7 +139,7 @@ const Chat_History = [
   {
     type: "divider",
     text: "Today",
-  },       
+  },
   {
     type: "msg",
     message: "Hi 👋 Panda, not bad, u ?",
@@ -220,7 +220,7 @@ const Message_options = [
   },
 ];
 
-const SHARED_LINKS=[
+const SHARED_LINKS = [
   {
     type: "msg",
     subtype: "link",
@@ -260,40 +260,99 @@ const SHARED_LINKS=[
     message: "Yep, I can also do that",
     incoming: true,
     outgoing: false,
-  }
+  },
+];
+const SHARED_DOCS = [
+  {
+    type: "msg",
+    subtype: "doc",
+    message: "Yes sure, here you go.",
+    incoming: true,
+    outgoing: false,
+  },
+  {
+    type: "msg",
+    subtype: "doc",
+    message: "Yes sure, here you go.",
+    incoming: true,
+    outgoing: false,
+  },
+  {
+    type: "msg",
+    subtype: "doc",
+    message: "Yes sure, here you go.",
+    incoming: true,
+    outgoing: false,
+  },
+  {
+    type: "msg",
+    subtype: "doc",
+    message: "Yes sure, here you go.",
+    incoming: true,
+    outgoing: false,
+  },
+];
 
-]
-const SHARED_DOCS=[
+const MembersList = [
   {
-    type: "msg",
-    subtype: "doc",
-    message: "Yes sure, here you go.",
-    incoming: true,
-    outgoing: false,
+    id: 0,
+    img: faker.image.avatar(),
+    name: faker.name.firstName(),
+    online: true,
   },
   {
-    type: "msg",
-    subtype: "doc",
-    message: "Yes sure, here you go.",
-    incoming: true,
-    outgoing: false,
+    id: 1,
+    img: faker.image.avatar(),
+    name: faker.name.firstName(),
+    online: false,
   },
   {
-    type: "msg",
-    subtype: "doc",
-    message: "Yes sure, here you go.",
-    incoming: true,
-    outgoing: false,
+    id: 3,
+    img: faker.image.avatar(),
+    name: faker.name.firstName(),
+    online: true,
   },
   {
-    type: "msg",
-    subtype: "doc",
-    message: "Yes sure, here you go.",
-    incoming: true,
-    outgoing: false,
-  }
-]
+    id: 4,
+    img: faker.image.avatar(),
+    name: faker.name.firstName(),
+    online: true,
+  },
+];
 
+const CallLogs = [
+  {
+    id: 0,
+    img: faker.image.avatar(),
+    name: faker.name.firstName(),
+    missed: false,
+    incoming: true,
+  },
+
+  {
+    id: 1,
+    img: faker.image.avatar(),
+    name: faker.name.firstName(),
+    missed: false,
+    incoming: false,
+  },
+
+  {
+    id: 2,
+    img: faker.image.avatar(),
+    name: faker.name.firstName(),
+    missed: true,
+    incoming: true,
+  },
+
+  {
+    id: 3,
+    img: faker.image.avatar(),
+    name: faker.name.firstName(),
+    missed: false,
+    incoming: true,
+  },
+];
 
 export {
   Profile_Menu,
@@ -303,5 +362,7 @@ export {
   Chat_History,
   Message_options,
   SHARED_LINKS,
-  SHARED_DOCS
+  SHARED_DOCS,
+  CallLogs,
+  MembersList,
 };
