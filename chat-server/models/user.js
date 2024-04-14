@@ -3,6 +3,7 @@
 const mongoose = require("mongoose");
 //for hashing the password
 const bcrypt = require("bcryptjs");
+const crypto=require("crypto");
 const userSchema = new mongoose.Schema({
   firstName: {
     type: String,
@@ -30,6 +31,9 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
+  },
+  passwordConfirm:{
+    type:String,
   },
   passwordChangedAt: {
     type: Date,
@@ -88,6 +92,22 @@ userSchema.methods.correctOTP = async function (
    return await bcrypt.compare(candidateOTP,userOTP)
  }
 
+
+userSchema.methods.createPasswordResetToken=function(){
+  // using crypto to generate random string
+  const resetToken=crypto.randomBytes(32).toString("hex");
+  //store resetToken in user schema
+  //sha246 is the hashing algorithm
+  this.passwordResetToken=crypto.createHash("sha256").update(resetToken).digest("hex");
+  this.passwordResetExpires=Date.now()+10*60*1000;//10min expiry time
+
+
+  return resetToken;
+};
+//We are not creating arrow function as in arrow function this keyword does not work
+userSchema.methods.changePasswordAfter=function(timestamp){
+  return timestamp < this.passwordChangedAt;
+}
 
 
 //This name will be used in our database

@@ -2,13 +2,21 @@
 const jwt = require("jsonwebtoken");
 //for otp generation
 const otpGenerator = require("otp-generator");
+const crypto=require("crypto")
+const {promisify}=require("utils");
 
 //Now performing the CRUD operations
 
 const User = require("../models/user");
+const { restart } = require("nodemon");
 
 //defining the sign token function
 const signToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET);
+
+//Signup= register- sentOTP-verifyOtp
+
+//for registering there would be some api ex: https://api.tawk.com/auth/register
+
 
 //Register New User
 //collecting the data during registaration from the body
@@ -155,7 +163,147 @@ exports.login = async (req, res, next) => {
     });
 };
 
-//For resetting the password
-exports.forgotPassword = async (req, res, next) => {};
+// Making protecting routes
+exports.protect=async(req,res,next)=>{
+  //1. Getting token(JWT) and check if its there
+  let token;
+  
+  if(req.headers.authorization && req.headers.authorization.startWith("Bearer")){
+    token=req.headers.authorization.split(" ")[1];
 
-exports.resetPassword = async (req, res, next) => {};
+
+  }
+  else if(req.cookies.jwt){
+    token=req.cookies.jwt;
+  }
+  else{
+    res.status(400).json({
+      status:"error",
+      message:"You are not logged in, Please log in to get access"
+    });
+    return;
+  }
+
+  //2. Verification of token
+  const decoded=await promisify(jwt.verify)(token,process.env.JWT_SECRET);
+
+  //3. Check if user still exist
+  const this_user=await User.findById(decoded.userId);
+
+  if(!this_user){
+    res.status(400).json({
+      status:"error",
+      message:"The user doesn't exist",
+    })
+  }
+
+  //4. Check if user change their password after token was issued
+  //iat ->contain the time when the token was issued
+  if(this_user.changePasswordAfter(decoded.iat)){
+    res.status(400).json({
+      status:"error",
+      message:"User recently updated password! Please log in again",
+    })
+  }
+
+
+  req.user=this_user;
+  //passing to the next middleware
+  next();
+};
+
+//Types of routes
+  //1. Protected-> only logged in users can access these 
+  //2. Unprotected Routes
+
+
+//For resetting the password
+exports.forgotPassword = async (req, res, next) => {
+  // 1. Get the user email
+  const user=await User.findOne({email:req.body.email});
+
+  if(!user){
+      res.status(400).json({
+        status:"error",
+        message:"There is no user with given email address"
+      });
+      return;
+
+  }
+
+  //2 Generate Random reset token->with the help of which user can reset the password
+  const resetToken=user.createPasswordResetToken();
+  
+  //3 Send tocken to the user through email
+  //let say our app is having this url
+  const resetURL=`https://tawk.com/auth/reset-password/?code${resetToken}`;
+  
+  try{
+      //Todo-> Send Email with reset url
+      res.status(200).json({
+        status:"success",
+        message:"Reset Password link sent to Email",
+      })
+  }
+  catch(error){
+    user.passwordResetToken=undefined;
+    user.passwordResetExpires=undefined;
+
+    await user.save({validateBeforeSave:false});
+    res.status(500).json({
+      status:"error",
+      message:"There was an error sending the email, Please try again later",
+    })
+  }
+
+
+
+
+};
+
+exports.resetPassword = async (req, res, next) => {
+  // 1 Get the user based on token
+  //We will be having token inside the req body
+
+  const hashedToken=crypto.createHash("sha256").update(req.params.token).digest("hex");
+
+  const user=await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: {$gt:Date.now()}, //gt->greater than
+  });
+
+  //2.If token has expired or submission is out of time window 
+  if(!user){
+    res.status(400).json({
+      status:"error",
+      message:"Token is invalid or expired",
+    });
+    return;
+  }
+  //3 Update user password and set resetToken and expiry to undefined
+  user.password=req.body.password;
+  user.passwordConfirm=req.body.passwordConfirm
+
+  user.passwordResetToken=undefined;
+  user.passwordResetExpires=undefined;
+
+  //Saving the data
+  await user.save();
+
+  // 4. Log in the user and send new JWT
+
+  //Todo-> send an email to user informing about password reset 
+
+
+  const token = signToken(user._id);
+  res.status(200).json({ 
+      status: "success",
+       message: "Password Reseted Successfully", 
+       token
+  });
+
+
+
+
+
+};
