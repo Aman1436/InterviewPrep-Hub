@@ -3,11 +3,17 @@ const jwt = require("jsonwebtoken");
 //for otp generation
 const otpGenerator = require("otp-generator");
 const crypto=require("crypto")
+const OTP=require("../models/OTP");
+const otpGenerator=require("otp-generator");
 const {promisify}=require("utils");
-
+const mailSender = require("../utils/mailSender");
 //Now performing the CRUD operations
 
 const User = require("../models/user");
+// const otp = require("../Templates/Mail/otp");
+const resetPassword = require("../Templates/Mail/resetPassword");
+const catchAsync = require("../utils/catchAsync");
+
 const { restart } = require("nodemon");
 
 //defining the sign token function
@@ -47,7 +53,7 @@ exports.register = async (req, res, next) => {
   }
   //if user already exists and not done verification using otp
   else if (existing_user) {
-    const updated_user = await User.findOneAndUpdate(
+     await User.findOneAndUpdate(
       { email: email },
       filteredBody,
       { new: true, validateModifiedOnly: true }
@@ -68,7 +74,7 @@ exports.register = async (req, res, next) => {
 };
 
 //for sending the otp
-exports.sendOTP = async (req, res, next) => {
+exports.sendOTP = catchAsync(async (req, res, next) => {
   const { userId } = req;
   //used the npm package named otp-generator
   const new_otp = otpGenerator.generate(6, {
@@ -80,15 +86,31 @@ exports.sendOTP = async (req, res, next) => {
   //now we need to set the time for expiry of the otp(10 minutes from the time of otp generation)
   const otp_expiry_time = Date.now() + 10 * 60 * 1000;
 
-  await User.findbyIdOneAndUpdate(userId, { otp: new_otp, otp_expiry_time });
+  const user =await User.findbyIdOneAndUpdate
+  (userId, { otp_expiry_time: otp_expiry_time,});
+
+  user.otp = new_otp.toString();
+  await user.save({ new: true, validateModifiedOnly: true });
+  console.log(new_otp);
+
 
   //TODO Sending the email to the user
-
-  res.status(200).json({ status: "success", message: "OTP sent successfully" });
-};
+  // mailService.sendEmail({
+  //   from:"aryamanskate01@gmail.com", //enter email verified by sendgrid 
+  //   to:"aryamanskate01@gmail.com",
+  //   subject: "Verification OTP",
+  //   html: otp(user.firstName, new_otp),
+  //   attachments: [],
+  // })
+  
+  res.status(200).json({ 
+    status: "success", 
+    message: "OTP sent successfully"
+ });
+});
 
 //For verifying the otp and update the user record accordingly
-exports.verifyOTP = async (req, res, next) => {
+exports.verifyOTP = catchAsync(async (req, res, next) => {
   const { email, otp } = req.body;
 
   const user = await User.findOne({
@@ -121,12 +143,14 @@ exports.verifyOTP = async (req, res, next) => {
   await user.save({ new: true, validateModifiedOnly: true });
 
   const token = signToken(user._id);
-  res
-    .status(200)
-    .json({ status: "success", message: "OTP verified successfully", token });
-};
+  res.status(200).json({ status: "success", 
+    message: "OTP verified successfully", 
+    token,
+    user_id: user._id,
+   });
+});
 
-exports.login = async (req, res, next) => {
+exports.login = catchAsync(async (req, res, next) => {
   //getting the email and password from the request body
 
   const { email, password } = req.body;
@@ -140,77 +164,66 @@ exports.login = async (req, res, next) => {
       });
   }
   //Finding the user in the database from the username and password provided
-  const userDoc = await User.findOne({ email: email }).select("+password");
+  const user = await User.findOne({ email: email }).select("+password");
 
   //If user not found
-  if (
-    !userDoc ||
-    !(await userDoc.correctPassword(password, userDoc.password))
-  ) {
-    return res
-      .status(400)
-      .json({ status: "error", message: "Email  or password is incorrect" });
+  if (!user ||
+    !(await user.correctPassword(password, userDoc.password))) {
+    return res.status(400).json({ status: "error", 
+      message: "Email  or password is incorrect" });
+    
   }
 
   //If user and password matched
-  const token = signToken(userDoc._id);
-  res
-    .status(200)
-    .json({
-      status: "success",
-      message: "Logged in successfully",
-      data: { token },
-    });
-};
+  const token = signToken(user._id);
+  res.status(200).json({
+    status: "success",
+    message: "Logged in successfully!",
+    token,
+    user_id: user._id,
+  });
+});
 
 // Making protecting routes
-exports.protect=async(req,res,next)=>{
+exports.protect=(async(req,res,next)=>{
   //1. Getting token(JWT) and check if its there
   let token;
   
   if(req.headers.authorization && req.headers.authorization.startWith("Bearer")){
     token=req.headers.authorization.split(" ")[1];
-
-
   }
   else if(req.cookies.jwt){
     token=req.cookies.jwt;
   }
-  else{
-    res.status(400).json({
-      status:"error",
-      message:"You are not logged in, Please log in to get access"
+  if (!token) {
+    return res.status(401).json({
+      message: "You are not logged in! Please log in to get access.",
     });
-    return;
+  }
+  // 2) Verification of token
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+  console.log(decoded);
+
+  // 3) Check if user still exists
+
+  const this_user = await User.findById(decoded.userId);
+  if (!this_user) {
+    return res.status(401).json({
+      message: "The user belonging to this token does no longer exists.",
+    });
+  }
+  // 4) Check if user changed password after the token was issued
+  if (this_user.changedPasswordAfter(decoded.iat)) {
+    return res.status(401).json({
+      message: "User recently changed password! Please log in again.",
+    });
   }
 
-  //2. Verification of token
-  const decoded=await promisify(jwt.verify)(token,process.env.JWT_SECRET);
-
-  //3. Check if user still exist
-  const this_user=await User.findById(decoded.userId);
-
-  if(!this_user){
-    res.status(400).json({
-      status:"error",
-      message:"The user doesn't exist",
-    })
-  }
-
-  //4. Check if user change their password after token was issued
-  //iat ->contain the time when the token was issued
-  if(this_user.changePasswordAfter(decoded.iat)){
-    res.status(400).json({
-      status:"error",
-      message:"User recently updated password! Please log in again",
-    })
-  }
-
-
-  req.user=this_user;
-  //passing to the next middleware
+  // GRANT ACCESS TO PROTECTED ROUTE
+  req.user = this_user;
   next();
-};
+});
 
 //Types of routes
   //1. Protected-> only logged in users can access these 
@@ -218,7 +231,7 @@ exports.protect=async(req,res,next)=>{
 
 
 //For resetting the password
-exports.forgotPassword = async (req, res, next) => {
+exports.forgotPassword = catchAsync(async (req, res, next) => {
   // 1. Get the user email
   const user=await User.findOne({email:req.body.email});
 
@@ -227,19 +240,28 @@ exports.forgotPassword = async (req, res, next) => {
         status:"error",
         message:"There is no user with given email address"
       });
-      return;
 
   }
 
   //2 Generate Random reset token->with the help of which user can reset the password
   const resetToken=user.createPasswordResetToken();
-  
+  await user.save({ validateBeforeSave: false });
   //3 Send tocken to the user through email
   //let say our app is having this url
-  const resetURL=`https://tawk.com/auth/reset-password/?code${resetToken}`;
   
   try{
-      //Todo-> Send Email with reset url
+    //Todo-> Send Email with reset url
+    const resetURL = `http://localhost:3000/auth/new-password?token=${resetToken}`;
+    console.log(resetURL);
+
+    // mailService.sendEmail({
+    //   from: "aryamanskate01@gmail.com",
+    //   to: user.email,
+    //   subject: "Reset Password",
+    //   html: resetPassword(user.firstName, resetURL),
+    //   attachments: [],
+    // });
+
       res.status(200).json({
         status:"success",
         message:"Reset Password link sent to Email",
@@ -259,13 +281,13 @@ exports.forgotPassword = async (req, res, next) => {
 
 
 
-};
+});
 
 exports.resetPassword = async (req, res, next) => {
   // 1 Get the user based on token
   //We will be having token inside the req body
 
-  const hashedToken=crypto.createHash("sha256").update(req.params.token).digest("hex");
+  const hashedToken=crypto.createHash("sha256").update(req.body.token).digest("hex");
 
   const user=await User.findOne({
     passwordResetToken: hashedToken,
@@ -274,11 +296,10 @@ exports.resetPassword = async (req, res, next) => {
 
   //2.If token has expired or submission is out of time window 
   if(!user){
-    res.status(400).json({
+    return res.status(400).json({
       status:"error",
       message:"Token is invalid or expired",
     });
-    return;
   }
   //3 Update user password and set resetToken and expiry to undefined
   user.password=req.body.password;
@@ -299,11 +320,54 @@ exports.resetPassword = async (req, res, next) => {
   res.status(200).json({ 
       status: "success",
        message: "Password Reseted Successfully", 
-       token
+       token,
   });
+};
 
+//own sendotp
+exports.sendotp = async (req, res) => {
+	try {
+		const { email } = req.body;
 
+		// Check if user is already present
+		// Find user with provided email
+		const checkUserPresent = await User.findOne({ email });
+		// to be used in case of signup
 
+		// If user found with provided email
+		if (checkUserPresent) {
+			// Return 401 Unauthorized status code with error message
+			return res.status(401).json({
+				success: false,
+				message: `User is Already Registered`,
+			});
+		}
 
-
+		var otp = otpGenerator.generate(6, {
+			upperCaseAlphabets: false,
+			lowerCaseAlphabets: false,
+			specialChars: false,
+		});
+		const result = await OTP.findOne({ otp: otp });
+		console.log("Result is Generate OTP Func");
+		console.log("OTP", otp);
+		console.log("Result", result);
+		while (result) {
+			otp = otpGenerator.generate(6, {
+				upperCaseAlphabets: false,
+			});
+		}
+		const otpPayload = { email, otp };
+		const otpBody = await OTP.create(otpPayload);
+        console.log("OTP CREATED");
+		console.log("OTP Body", otpBody);
+		res.status(200).json({
+			success: true,
+			message: `OTP Sent Successfully`,
+			otp,
+		});
+	} catch (error) {
+		console.log(error.message);
+		return res.status(500).json({ success: false, error: error.message });
+	}
 };
