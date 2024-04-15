@@ -3,6 +3,7 @@
 const mongoose = require("mongoose");
 //for hashing the password
 const bcrypt = require("bcryptjs");
+const crypto=require("crypto");
 const userSchema = new mongoose.Schema({
   firstName: {
     type: String,
@@ -25,11 +26,14 @@ const userSchema = new mongoose.Schema({
           .toLowerCase()
           .match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
       },
-      message: (props) => "Email (${props.value}) is invalid!",
+      message: (props) => `Email (${props.value}) is invalid!`,
     },
   },
   password: {
     type: String,
+  },
+  passwordConfirm:{
+    type:String,
   },
   passwordChangedAt: {
     type: Date,
@@ -48,7 +52,8 @@ const userSchema = new mongoose.Schema({
   },
   verified: {
     type: Boolean,
-    default: false,
+    // default: false, changin by default to verified=true
+    default: true,
   },
   otp: {
      type:Number,
@@ -60,16 +65,28 @@ const userSchema = new mongoose.Schema({
 
 userSchema.pre("save", async function (next) {
    //We need to run theis function if OTP is actually modified 
-   if(!this.isModified("otp")){
+   if(!this.isModified("otp") || !this.otp ){
       return next();   
    }
 
 
    // Hashing the otp with the cost of 12
-   this.otp=await bcrypt.hash(this.otp,12);
+   this.otp=await bcrypt.hash(this.otp.toString(),12);
+   console.log(this.otp.toString(), "FROM PRE SAVE HOOK");
 
    next();
 })
+
+//Decrypting password passed by the user in reset password link
+userSchema.pre("save", async function (next) {
+  if(!this.isModified("password") || !this.password){
+     return next();   
+  }
+  this.password=await bcrypt.hash(this.password,12);
+
+  next();
+})
+
 
 
 //for comparing the password entered and that in the DB in the encrypted format
@@ -87,6 +104,32 @@ userSchema.methods.correctOTP = async function (
  ){
    return await bcrypt.compare(candidateOTP,userOTP)
  }
+ 
+//We are not creating arrow function as in arrow function this keyword does not work
+ userSchema.methods.changedPasswordAfter = function (JWTTimeStamp) {
+  if (this.passwordChangedAt) {
+    const changedTimeStamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10
+    );
+    return JWTTimeStamp < changedTimeStamp;
+  }
+
+  // FALSE MEANS NOT CHANGED
+  return false;
+};
+
+userSchema.methods.createPasswordResetToken=function(){
+  // using crypto to generate random string
+  const resetToken=crypto.randomBytes(32).toString("hex");
+  //store resetToken in user schema
+  //sha246 is the hashing algorithm
+  this.passwordResetToken=crypto.createHash("sha256").update(resetToken).digest("hex");
+  this.passwordResetExpires=Date.now()+10*60*1000;//10min expiry time
+
+
+  return resetToken;
+};
 
 
 
