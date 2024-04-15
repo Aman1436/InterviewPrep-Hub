@@ -14,7 +14,7 @@ process.on('uncaughtException', (err) => {
 process.exit(1);}
 )
 
-const app = require("./app");
+// const app = require("./app");
 // const dotenv = require("dotenv");
 // dotenv.config({ path: "./config.env" });
 

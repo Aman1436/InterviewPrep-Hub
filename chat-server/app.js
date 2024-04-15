@@ -14,7 +14,7 @@ const rateLimit=require("express-rate-limit");
 //Helmet: secure the express app by adding additional security headers for security perspective
 const helmet=require("helmet");
 
-// const mongosanitize=require("express-mongo-sanitize");
+const mongosanitize=require("express-mongo-sanitize");
 
 const xss= require("xss-clean");
 const bodyParser=require("body-parser")//Will parse the body before handling to any other handler in the server

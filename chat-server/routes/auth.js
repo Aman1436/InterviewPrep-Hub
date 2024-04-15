@@ -5,7 +5,8 @@ const authController=require("../controllers/authController");
 
 router.post("/login",authController.login);
 
-router.post("/register",authController.register,authController.sendOTP);
+// router.post("/register",authController.register,authController.sendOTP); //commenting register with otp part
+router.post("/register",authController.register);
 
 router.post("/verify",authController.verifyOTP);
 

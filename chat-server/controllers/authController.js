@@ -4,14 +4,14 @@ const jwt = require("jsonwebtoken");
 const otpGenerator = require("otp-generator");
 const crypto=require("crypto")
 const OTP=require("../models/OTP");
-const otpGenerator=require("otp-generator");
-const {promisify}=require("utils");
+const { promisify } = require("util");
 const mailSender = require("../utils/mailSender");
 //Now performing the CRUD operations
+const filterObj = require("../utils/filterObj");
 
 const User = require("../models/user");
 // const otp = require("../Templates/Mail/otp");
-const resetPassword = require("../Templates/Mail/resetPassword");
+// const resetPassword = require("../Templates/Mail/resetPassword");
 const catchAsync = require("../utils/catchAsync");
 
 const { restart } = require("nodemon");
@@ -26,9 +26,11 @@ const signToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET);
 
 //Register New User
 //collecting the data during registaration from the body
+//NOTE: I AM MODIFYING EVERY CODE THAT CONTAIN OTP VERIFICATION, WE WILL BE ADDING OTP VERIFICATION AT END 
 exports.register = async (req, res, next) => {
-  const { firstName, lastName, email, password, verified } = req.body;
-
+  // const { firstName, lastName, email, password, verified } = req.body;
+  const { firstName, lastName, email, password } = req.body;
+  
   const filteredBody = filterObj(
     req.body,
     "firstName",
@@ -42,35 +44,50 @@ exports.register = async (req, res, next) => {
 
   //If user with the same email address already exists,we will throw a error message
   const existing_user = await User.findOne({ email: email });
-  //if user already exists and already done verification using otp
-  if (existing_user && existing_user.verified) {
-    return res
-      .status(400)
-      .json({
-        status: "error",
-        message: "User with this email already exists.Please login.",
-      });
-  }
-  //if user already exists and not done verification using otp
-  else if (existing_user) {
-     await User.findOneAndUpdate(
-      { email: email },
-      filteredBody,
-      { new: true, validateModifiedOnly: true }
-    );
 
-    //pass the control to next middleware
-    req.userId = existing_user._id;
-    next();
-  } else {
+  //if user already exists and already done verification using otp
+  // if (existing_user && existing_user.verified) {
+  //   return res
+  //     .status(400)
+  //     .json({
+  //       status: "error",
+  //       message: "User with this email already exists.Please login.",
+  //     });
+  // }
+  //if user already exists and not done verification using otp
+  // if (existing_user) {
+  //    await User.findOneAndUpdate(
+  //     { email: email },
+  //     filteredBody,
+  //     { new: true, validateModifiedOnly: true }
+  //   );
+
+  //   //pass the control to next middleware
+  //   req.userId = existing_user._id;
+  //   next();
+  // } else {
     //if user record is not found in the database
     //We need to create new user record
+    if(!existing_user){
     const new_user = await User.create(filteredBody);
-
     //generate the otp and send email to the user
     req.userId = new_user._id;
+    console.log("User registered Successfully",new_user);
+    return res.status(200).json({
+      sucess:true,
+      message:"Register Successfully",
+      data:new_user
+    })
     next();
-  }
+    }
+    else{
+      return res.status(400).json({
+        success:false,
+        message:"User with this email already existed",
+      })
+    }
+
+  // }
 };
 
 //for sending the otp
@@ -115,11 +132,11 @@ exports.verifyOTP = catchAsync(async (req, res, next) => {
 
   const user = await User.findOne({
     email: email,
-    otp_expiry_time: { $gt: Date.now() },
+    // otp_expiry_time: { $gt: Date.now() },
   });
 
   if (!user) {
-    res
+    return res
       .status(400)
       .json({
         status: "error",
@@ -130,24 +147,33 @@ exports.verifyOTP = catchAsync(async (req, res, next) => {
   //We will also store the otp in the DB in the hash format
   //Then we need to compare the otps
 
+  //NOTE: FOR NOW CREATING A GLOBAL OTP 9956 THAT WILL VALIDATE THE USER NO MATTER WHAT SYSTEM GENERATES
   //If userOTP is incorrect
-  if (!(await user.correctOTP(otp, user.otp))) {
-    res.status(400).json({ status: "error", message: "OTP is incorrect" });
-  }
+    const globalotp="9956";
+  // if (!user.otp || !(await user.correctOTP(globalotp, user.otp))) {
+  //   res.status(400).json({ status: "error", message: "OTP is incorrect" });
+  // }
+  // if (!user.otp || otp!==globalotp) {
+  //   res.status(400).json({ status: "error", message: "OTP is incorrect" });
+  // }
+  console.log("Hi");
+  
 
-  //If userOTP is correct
+  //If userOTP is correct C:\Users\verma\OneDrive\Desktop\InterviewPrepHubmain\InterviewPrep-Hub\chat-server\controllers\authController.js
 
   user.verified = true;
   user.otp = undefined;
 
-  await user.save({ new: true, validateModifiedOnly: true });
+  await user.save();
 
   const token = signToken(user._id);
-  res.status(200).json({ status: "success", 
+  // const token = "Hi";
+  return res.status(200).json({ status: "success", 
     message: "OTP verified successfully", 
     token,
-    user_id: user._id,
+    // user_id: user._id,
    });
+
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -164,11 +190,11 @@ exports.login = catchAsync(async (req, res, next) => {
       });
   }
   //Finding the user in the database from the username and password provided
-  const user = await User.findOne({ email: email }).select("+password");
+  const user = await User.findOne({ email: email });
 
   //If user not found
   if (!user ||
-    !(await user.correctPassword(password, userDoc.password))) {
+    !(await user.correctPassword(password, user.password))) {
     return res.status(400).json({ status: "error", 
       message: "Email  or password is incorrect" });
     
@@ -236,7 +262,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   const user=await User.findOne({email:req.body.email});
 
   if(!user){
-      res.status(400).json({
+      return res.status(400).json({
         status:"error",
         message:"There is no user with given email address"
       });
@@ -265,6 +291,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
       res.status(200).json({
         status:"success",
         message:"Reset Password link sent to Email",
+        link:resetURL,
       })
   }
   catch(error){
@@ -288,7 +315,7 @@ exports.resetPassword = async (req, res, next) => {
   //We will be having token inside the req body
 
   const hashedToken=crypto.createHash("sha256").update(req.body.token).digest("hex");
-
+  // console.log(hashedToken);
   const user=await User.findOne({
     passwordResetToken: hashedToken,
     passwordResetExpires: {$gt:Date.now()}, //gt->greater than
@@ -322,52 +349,4 @@ exports.resetPassword = async (req, res, next) => {
        message: "Password Reseted Successfully", 
        token,
   });
-};
-
-//own sendotp
-exports.sendotp = async (req, res) => {
-	try {
-		const { email } = req.body;
-
-		// Check if user is already present
-		// Find user with provided email
-		const checkUserPresent = await User.findOne({ email });
-		// to be used in case of signup
-
-		// If user found with provided email
-		if (checkUserPresent) {
-			// Return 401 Unauthorized status code with error message
-			return res.status(401).json({
-				success: false,
-				message: `User is Already Registered`,
-			});
-		}
-
-		var otp = otpGenerator.generate(6, {
-			upperCaseAlphabets: false,
-			lowerCaseAlphabets: false,
-			specialChars: false,
-		});
-		const result = await OTP.findOne({ otp: otp });
-		console.log("Result is Generate OTP Func");
-		console.log("OTP", otp);
-		console.log("Result", result);
-		while (result) {
-			otp = otpGenerator.generate(6, {
-				upperCaseAlphabets: false,
-			});
-		}
-		const otpPayload = { email, otp };
-		const otpBody = await OTP.create(otpPayload);
-        console.log("OTP CREATED");
-		console.log("OTP Body", otpBody);
-		res.status(200).json({
-			success: true,
-			message: `OTP Sent Successfully`,
-			otp,
-		});
-	} catch (error) {
-		console.log(error.message);
-		return res.status(500).json({ success: false, error: error.message });
-	}
 };
