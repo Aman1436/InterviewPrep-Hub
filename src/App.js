@@ -4,7 +4,7 @@ import Router from "./routes";
 import ThemeProvider from "./theme";
 // components
 import ThemeSettings from "./components/settings";
-import { Snackbar } from "@mui/material";
+import {Snackbar} from "@mui/material";
 import React from "react";
 import MuiAlert from "@mui/material/Alert";
 import { useDispatch, useSelector } from "react-redux";
@@ -17,10 +17,10 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 });
 function App() {
   const dispatch = useDispatch();
-  const { open, message, severity } = useSelector(
+  const { severity, message, open } = useSelector(
     (state) => state.app.snackbar
   );
-  console.log( open);
+  // console.log( open);
   return(
     <>
       <ThemeProvider>
