@@ -180,7 +180,7 @@ exports.login = catchAsync(async (req, res, next) => {
   //getting the email and password from the request body
 
   const { email, password } = req.body;
-
+   console.log("HI");
   if (!email || !password) {
     return res
       .status(400)
@@ -234,7 +234,7 @@ exports.protect=(async(req,res,next)=>{
   // 3) Check if user still exists
 
   const this_user = await User.findById(decoded.userId);
-  if (!this_user) {
+  if (!this_user){
     return res.status(401).json({
       message: "The user belonging to this token does no longer exists.",
     });

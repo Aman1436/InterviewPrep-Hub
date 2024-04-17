@@ -12,7 +12,10 @@ import { LoadingButton } from "@mui/lab";
 import { useDispatch, useSelector } from "react-redux";
 import { Eye, EyeSlash } from "phosphor-react";
 import { useTheme } from "@mui/material/styles";
+import { LoginUser } from "../../redux/slices/auth";
 const LoginForm = () => {
+
+  const dispatch=useDispatch();
   const [showPassword, setShowPassword] = useState(false);
     const theme=useTheme();
   // Using Yup->object form validation library
@@ -35,15 +38,15 @@ const LoginForm = () => {
   const { reset, setError, handleSubmit, formState: { errors,isSubmitting,isSubmitSuccessful } } = methods;
   
   const onSubmit = async (data) => {
-    try {
+    try{
       // Submit data to backend
+      dispatch(LoginUser(data));
     } catch (error) {
       console.log(error);
       reset();
       setError("afterSubmit", { ...error, message: error.message });
     }
   };
-  
   return (
     <FormProvider methods={methods} onSubmit={handleSubmit(onSubmit)}>
       <Stack spacing={3}>
@@ -88,8 +91,6 @@ const LoginForm = () => {
         }
       }}
       >
-
-
         Login
       </Button>
       </Stack>      

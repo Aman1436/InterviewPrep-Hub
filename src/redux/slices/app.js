@@ -1,12 +1,15 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-import { dispatch } from "../store";
-
 const initialState = {
   sidebar: {
     open: false,
     type: "CONTACT",
   },
+  snackbar: {
+    open: null,
+    message: null,
+    severity: null,
+  }
 };
 
 const slice = createSlice({
@@ -20,6 +23,16 @@ const slice = createSlice({
     updateSidebarType(state, action) {
       state.sidebar.type = action.payload.type;
     },
+    openSnackbar(state, action) {
+      state.snackbar.open = true;
+      state.snackbar.severity = action.payload.severity;
+      state.snackbar.message = action.payload.message;
+    },
+    closeSnackbar(state, action) {
+      state.snackbar.open = false;
+      state.snackbar.severity = null;
+      state.snackbar.message = null;
+    },
   },
 });
 
@@ -28,13 +41,13 @@ const slice = createSlice({
 export default slice.reducer;
 
 export function ToggleSidebar() {
-  return async () => {
+  return async (dispatch, getState) => {
     dispatch(slice.actions.toggleSidebar());
   };
 }
 
 export function UpdateSidebarType(type) {
-  return async () => {
+  return async (dispatch, getState) => {
     dispatch(
       slice.actions.updateSidebarType({
         type,
@@ -42,3 +55,16 @@ export function UpdateSidebarType(type) {
     );
   };
 }
+
+export function showSnackbar({ severity, message }) {
+  return async (dispatch, getState) => {
+    dispatch(slice.actions.openSnackbar({ severity, message }));
+    setTimeout(() => {
+      dispatch(slice.actions.closeSnackbar());
+    }, 4000);
+  };
+}
+
+export const closeSnackbar = () => async (dispatch, getState) => {
+  dispatch(slice.actions.closeSnackbar());
+};

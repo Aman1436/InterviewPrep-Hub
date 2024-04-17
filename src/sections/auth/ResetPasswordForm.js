@@ -9,8 +9,11 @@ import {Stack, Alert,Button} from "@mui/material";
 // components
 import FormProvider, { RHFTextField } from "../../components/hook-form";
 import { useTheme } from "@mui/material/styles";
+import { ForgotPassword } from "../../redux/slices/auth";
+import { useDispatch } from 'react-redux';
 
 const ResetPasswordForm = () => {
+  const dispatch=useDispatch();
   const [showPassword, setShowPassword] = useState(false);
     const theme=useTheme();
   // Using Yup->object form validation library
@@ -33,7 +36,9 @@ const ResetPasswordForm = () => {
   
   const onSubmit = async (data) => {
     try {
+      //data={email:""}
       // Submit data to backend
+      dispatch(ForgotPassword(data))
     } catch (error) {
       console.log(error);
       reset();

@@ -7,12 +7,15 @@ import { Alert, Stack,InputAdornment,IconButton,Button} from "@mui/material";
 import {Eye,EyeSlash} from 'phosphor-react'
 import { RHFTextField } from "../../components/hook-form";
 import { useTheme } from "@mui/material/styles";
+import { useDispatch } from "react-redux";
+import { RegisterUser } from "../../redux/slices/auth";
 const RegisterForm = () => {
+  const dispatch=useDispatch();
   const [showPassword, setShowPassword] = useState(false);
   const theme = useTheme();
   // Using Yup->object form validation library
   const RegisterSchema = Yup.object().shape({
-    firstName: Yup.string().required("First Name is required"),
+    firstName: Yup.string().required("First Name is  required"),
     lastName: Yup.string().required("Last Name is required"),
     email: Yup.string()
       .required("Email is required")
@@ -36,12 +39,13 @@ const RegisterForm = () => {
     reset,
     setError,
     handleSubmit,
-    formState: { errors, isSubmitting, isSubmitSuccessful },
+    formState: { errors },
   } = methods;
 
   const onSubmit = async (data) => {
     try {
       // Submit data to backend
+      dispatch(RegisterUser(data))
     } catch (error) {
       console.log(error);
       reset();
