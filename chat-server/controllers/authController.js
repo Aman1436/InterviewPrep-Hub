@@ -171,7 +171,7 @@ exports.verifyOTP = catchAsync(async (req, res, next) => {
   return res.status(200).json({ status: "success", 
     message: "OTP verified successfully", 
     token,
-    // user_id: user._id,
+    user_id: user._id,
    });
 
 });
